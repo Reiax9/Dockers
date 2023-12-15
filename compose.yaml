@@ -1,0 +1,49 @@
+version: '3.9'
+networks:
+  docker.internal:
+    name: docker.internal
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.1.0/24
+          gateway: 192.168.1.1
+
+services:
+  mysql:
+    image: mysql:latest
+    networks:
+      docker.internal:
+        ipv4_address: 192.168.1.20
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: Где
+    volumes:
+      - ./sql/scripts:/docker-entrypoint-initdb.d:ro
+      - ./sql/my.cnf:/etc/my.cnf:ro
+    restart: on-failure:3
+
+  http:
+    build: ./apache
+    networks:
+      docker.internal:
+        ipv4_address: 192.168.1.15
+    hostname: miPrimerPHP
+    extra_hosts:
+      - "mysql:192.168.1.20" 
+    ports: 
+      - "80:80"
+    depends_on:
+      - mysql
+    restart: always
+
+  kali:
+    build: ./kali
+    stdin_open: true
+    tty: true
+    networks:
+      docker.internal:
+        ipv4_address: 192.168.1.30
+    hostname: kali
+    ports:
+      - "3389:3389"
+    restart: "no"
